@@ -108,6 +108,16 @@ jobs:
           cd bruno
           npm run build:web
 
+      # 🔧 Imposta la versione corretta nel package.json di electron
+      - name: Set Bruno version in package.json
+        if: steps.decision.outputs.build == 'true'
+        shell: bash
+        run: |
+          VERSION="${{ steps.version.outputs.tag }}"
+          VERSION_SHORT="${VERSION#v}"
+          cd bruno/packages/bruno-electron
+          npm version "$VERSION_SHORT" --no-git-tag-version --allow-same-version
+
       # 👉 QUI puoi inserire patch automatiche
 
       - name: Build Windows app
