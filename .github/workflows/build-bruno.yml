@@ -122,7 +122,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: bruno-windows
-          path: bruno/packages/bruno-electron/dist/**
+          path: bruno/packages/bruno-electron/out/**
 
       - name: Save built version
         if: steps.decision.outputs.build == 'true'
