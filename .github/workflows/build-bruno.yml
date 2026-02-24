@@ -76,6 +76,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: bruno/.nvmrc
+          cache: 'npm'
+          cache-dependency-path: bruno/package-lock.json
 
       - name: Install deps
         if: steps.decision.outputs.build == 'true'
