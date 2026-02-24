@@ -11,8 +11,8 @@ on:
         description: "Tag specifico Bruno (es: v1.34.0). Vuoto = latest"
         required: false
 
-  schedule:
-    - cron: "0 */6 * * *"   # ogni 6 ore
+#  schedule:
+#    - cron: "0 */6 * * *"   # ogni 6 ore
 
 permissions:
   contents: write
