@@ -126,8 +126,6 @@ jobs:
 
       - name: Build Windows app
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           cd bruno
@@ -219,8 +217,6 @@ jobs:
 
       - name: Build macOS app
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           cd bruno
@@ -231,7 +227,7 @@ jobs:
         with:
           name: build-macos
           path: |
-            bruno/packages/bruno-electron/out/bruno-*
+            bruno/packages/bruno-electron/out/bruno_*
             !bruno/packages/bruno-electron/out/*.blockmap
           if-no-files-found: error
 
@@ -298,8 +294,6 @@ jobs:
 
       - name: Build Linux app
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           cd bruno
@@ -310,7 +304,7 @@ jobs:
         with:
           name: build-linux
           path: |
-            bruno/packages/bruno-electron/out/bruno-*
+            bruno/packages/bruno-electron/out/bruno_*
             !bruno/packages/bruno-electron/out/*.blockmap
           if-no-files-found: error
 
