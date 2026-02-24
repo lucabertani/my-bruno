@@ -128,6 +128,20 @@ jobs:
           7z a -tzip bruno-x64-unpacked.zip ./win-unpacked/*
           7z a -tzip bruno-arm64-unpacked.zip ./win-arm64-unpacked/*
 
+      - name: Rename files with correct version
+        if: steps.decision.outputs.build == 'true'
+        shell: bash
+        run: |
+          cd bruno/packages/bruno-electron/out
+          VERSION="${{ steps.version.outputs.tag }}"
+          # Rinomina gli installer
+          mv bruno_*_x64_win.exe "bruno_${VERSION}_x64_win.exe"
+          mv bruno_*_arm64_win.exe "bruno_${VERSION}_arm64_win.exe"
+          mv bruno_*_win.exe "bruno_${VERSION}_win.exe"
+          # Rinomina gli zip
+          mv bruno-x64-unpacked.zip "bruno_${VERSION}_x64-unpacked.zip"
+          mv bruno-arm64-unpacked.zip "bruno_${VERSION}_arm64-unpacked.zip"
+
       - name: Create Release
         if: steps.decision.outputs.build == 'true'
         uses: softprops/action-gh-release@v2
@@ -138,13 +152,13 @@ jobs:
             🚀 Build automatica di Bruno ${{ steps.version.outputs.tag }} per Windows
             
             **Installer disponibili:**
-            - `bruno_*_x64_win.exe` - Installer per Windows x64
-            - `bruno_*_arm64_win.exe` - Installer per Windows ARM64
-            - `bruno_*_win.exe` - Installer multi-architettura (x64 + ARM64)
+            - `bruno_${{ steps.version.outputs.tag }}_x64_win.exe` - Installer per Windows x64
+            - `bruno_${{ steps.version.outputs.tag }}_arm64_win.exe` - Installer per Windows ARM64
+            - `bruno_${{ steps.version.outputs.tag }}_win.exe` - Installer multi-architettura (x64 + ARM64)
             
             **Unpacked (portable):**
-            - `bruno-x64-unpacked.zip` - Versione portable x64
-            - `bruno-arm64-unpacked.zip` - Versione portable ARM64
+            - `bruno_${{ steps.version.outputs.tag }}_x64-unpacked.zip` - Versione portable x64
+            - `bruno_${{ steps.version.outputs.tag }}_arm64-unpacked.zip` - Versione portable ARM64
           files: |
             bruno/packages/bruno-electron/out/*.exe
             bruno/packages/bruno-electron/out/*.zip
