@@ -82,6 +82,7 @@ jobs:
         if: steps.decision.outputs.build == 'true'
         run: |
           cd bruno
+          node -e "const fs=require('fs');const pkg=require('./package.json');const ws=pkg.workspaces||[];if(!Array.isArray(ws)||ws.length===0){console.log('No workspaces found in package.json');process.exit(1);}const content='packages:\n'+ws.map(p=>'  - '+p).join('\\n')+'\\n';fs.writeFileSync('pnpm-workspace.yaml',content);"
           pnpm install
 
       # 👉 QUI puoi inserire patch automatiche
@@ -90,7 +91,7 @@ jobs:
         if: steps.decision.outputs.build == 'true'
         run: |
           cd bruno
-          pnpm dist
+          pnpm -C packages/bruno-electron dist
 
       - name: Upload artifact
         if: steps.decision.outputs.build == 'true'
