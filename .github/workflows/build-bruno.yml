@@ -134,10 +134,11 @@ jobs:
         run: |
           cd bruno/packages/bruno-electron/out
           VERSION="${{ steps.version.outputs.tag }}"
+          VERSION_SHORT="${VERSION#v}"
           # Rinomina gli installer
-          mv bruno_*_x64_win.exe "bruno_${VERSION}_x64_win.exe"
-          mv bruno_*_arm64_win.exe "bruno_${VERSION}_arm64_win.exe"
-          mv bruno_*_win.exe "bruno_${VERSION}_win.exe"
+          mv "bruno_${VERSION_SHORT}_x64_win.exe" "bruno_${VERSION}_x64_win.exe"
+          mv "bruno_${VERSION_SHORT}_arm64_win.exe" "bruno_${VERSION}_arm64_win.exe"
+          mv "bruno_${VERSION_SHORT}_win.exe" "bruno_${VERSION}_win.exe"
           # Rinomina gli zip
           mv bruno-x64-unpacked.zip "bruno_${VERSION}_x64-unpacked.zip"
           mv bruno-arm64-unpacked.zip "bruno_${VERSION}_arm64-unpacked.zip"
