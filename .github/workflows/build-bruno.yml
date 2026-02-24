@@ -90,8 +90,8 @@ jobs:
       - name: Build Windows app
         if: steps.decision.outputs.build == 'true'
         run: |
-          cd bruno
-          pnpm -C packages/bruno-electron dist
+          cd bruno/packages/bruno-electron
+          pnpm dist
 
       - name: Upload artifact
         if: steps.decision.outputs.build == 'true'
