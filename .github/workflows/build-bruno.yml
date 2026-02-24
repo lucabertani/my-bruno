@@ -89,9 +89,11 @@ jobs:
 
       - name: Build Windows app
         if: steps.decision.outputs.build == 'true'
+        shell: bash
         run: |
           cd bruno/packages/bruno-electron
-          pnpm dist
+          SCRIPT=$(node -e "const pkg=require('./package.json');const scripts=pkg.scripts||{};const candidates=['dist:win','dist:windows','dist:win64','dist'];const script=candidates.find(s=>scripts[s]);if(!script){console.error('No Windows dist script found. Available: '+Object.keys(scripts).join(', '));process.exit(1);}console.log(script);")
+          pnpm run "$SCRIPT"
 
       - name: Upload artifact
         if: steps.decision.outputs.build == 'true'
