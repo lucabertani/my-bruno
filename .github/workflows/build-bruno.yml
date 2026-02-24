@@ -14,6 +14,9 @@ on:
   schedule:
     - cron: "0 */6 * * *"   # ogni 6 ore
 
+permissions:
+  contents: write
+
 jobs:
   check-and-build:
     runs-on: windows-latest
@@ -21,6 +24,8 @@ jobs:
     steps:
       - name: Checkout this repo
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       # 🔎 Determina versione Bruno da usare
       - name: Get Bruno version
@@ -78,13 +83,38 @@ jobs:
           cd bruno
           npm install --legacy-peer-deps
 
+      - name: Build packages
+        if: steps.decision.outputs.build == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd bruno
+          npm run build:bruno-common
+          npm run build:bruno-converters
+          npm run build:bruno-requests
+          npm run build:bruno-query
+          npm run build:graphql-docs
+          npm run build:schema-types
+          npm run build:bruno-filestore
+
+      - name: Build web
+        if: steps.decision.outputs.build == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd bruno
+          npm run build:web
+
       # 👉 QUI puoi inserire patch automatiche
 
       - name: Build Windows app
         if: steps.decision.outputs.build == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -euo pipefail
           cd bruno
-          npm run build:web
           npm run build:electron
 
       - name: Upload artifact
