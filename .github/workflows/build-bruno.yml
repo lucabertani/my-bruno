@@ -70,30 +70,22 @@ jobs:
         if: steps.decision.outputs.build == 'true'
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-
-      - name: Setup pnpm
-        if: steps.decision.outputs.build == 'true'
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9
+          node-version-file: bruno/.nvmrc
 
       - name: Install deps
         if: steps.decision.outputs.build == 'true'
         run: |
           cd bruno
-          node -e "const fs=require('fs');const pkg=require('./package.json');const ws=pkg.workspaces||[];if(!Array.isArray(ws)||ws.length===0){console.log('No workspaces found in package.json');process.exit(1);}const content='packages:\n'+ws.map(p=>'  - '+p).join('\\n')+'\\n';fs.writeFileSync('pnpm-workspace.yaml',content);"
-          pnpm install
+          npm install --legacy-peer-deps
 
       # 👉 QUI puoi inserire patch automatiche
 
       - name: Build Windows app
         if: steps.decision.outputs.build == 'true'
-        shell: bash
         run: |
-          cd bruno/packages/bruno-electron
-          SCRIPT=$(node -e "const pkg=require('./package.json');const scripts=pkg.scripts||{};const candidates=['dist:win','dist:windows','dist:win64','dist'];const script=candidates.find(s=>scripts[s]);if(!script){console.error('No Windows dist script found. Available: '+Object.keys(scripts).join(', '));process.exit(1);}console.log(script);")
-          pnpm run "$SCRIPT"
+          cd bruno
+          npm run build:web
+          npm run build:electron
 
       - name: Upload artifact
         if: steps.decision.outputs.build == 'true'
