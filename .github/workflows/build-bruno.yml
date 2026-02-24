@@ -1,4 +1,4 @@
-name: Build Bruno Latest (Windows, macOS, Linux)
+name: Build Bruno Latest (Windows)
 
 on:
   workflow_dispatch:
@@ -18,11 +18,8 @@ permissions:
   contents: write
 
 jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    outputs:
-      tag: ${{ steps.version.outputs.tag }}
-      build: ${{ steps.decision.outputs.build }}
+  check-and-build:
+    runs-on: windows-latest
 
     steps:
       - name: Checkout this repo
@@ -69,20 +66,13 @@ jobs:
         if: steps.decision.outputs.build == 'false'
         run: echo "No new Bruno version"
 
-  windows:
-    runs-on: windows-latest
-    needs: prepare
-    if: needs.prepare.outputs.build == 'true'
-
-    steps:
-      - name: Checkout this repo
-        uses: actions/checkout@v4
-
       # 📥 Clona Bruno
       - name: Clone Bruno
-        run: git clone --depth 1 --branch ${{ needs.prepare.outputs.tag }} https://github.com/usebruno/bruno.git
+        if: steps.decision.outputs.build == 'true'
+        run: git clone --depth 1 --branch ${{ steps.version.outputs.tag }} https://github.com/usebruno/bruno.git
 
       - name: Setup Node
+        if: steps.decision.outputs.build == 'true'
         uses: actions/setup-node@v4
         with:
           node-version-file: bruno/.nvmrc
@@ -90,11 +80,13 @@ jobs:
           cache-dependency-path: bruno/package-lock.json
 
       - name: Install deps
+        if: steps.decision.outputs.build == 'true'
         run: |
           cd bruno
           npm install --legacy-peer-deps
 
       - name: Build packages
+        if: steps.decision.outputs.build == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -109,6 +101,7 @@ jobs:
           npm run sandbox:bundle-libraries --workspace=packages/bruno-js
 
       - name: Build web
+        if: steps.decision.outputs.build == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -117,21 +110,28 @@ jobs:
 
       # 🔧 Imposta la versione corretta nel package.json di electron
       - name: Set Bruno version in package.json
+        if: steps.decision.outputs.build == 'true'
         shell: bash
         run: |
-          VERSION="${{ needs.prepare.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.tag }}"
           VERSION_SHORT="${VERSION#v}"
           cd bruno/packages/bruno-electron
           npm version "$VERSION_SHORT" --no-git-tag-version --allow-same-version
 
+      # 👉 QUI puoi inserire patch automatiche
+
       - name: Build Windows app
+        if: steps.decision.outputs.build == 'true'
         shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           cd bruno
           npm run build:electron
 
       - name: Package unpacked versions
+        if: steps.decision.outputs.build == 'true'
         shell: bash
         run: |
           cd bruno/packages/bruno-electron/out
@@ -139,10 +139,11 @@ jobs:
           7z a -tzip bruno-arm64-unpacked.zip ./win-arm64-unpacked/*
 
       - name: Rename files with correct version
+        if: steps.decision.outputs.build == 'true'
         shell: bash
         run: |
           cd bruno/packages/bruno-electron/out
-          VERSION="${{ needs.prepare.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.tag }}"
           VERSION_SHORT="${VERSION#v}"
           # Rinomina gli installer
           mv "bruno_${VERSION_SHORT}_x64_win.exe" "bruno_${VERSION}_x64_win.exe"
@@ -152,203 +153,41 @@ jobs:
           mv bruno-x64-unpacked.zip "bruno_${VERSION}_x64-unpacked.zip"
           mv bruno-arm64-unpacked.zip "bruno_${VERSION}_arm64-unpacked.zip"
 
-      - name: Upload Windows artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-windows
-          path: |
-            bruno/packages/bruno-electron/out/*.exe
-            bruno/packages/bruno-electron/out/*.zip
-          if-no-files-found: error
-
-  macos:
-    runs-on: macos-latest
-    needs: prepare
-    if: needs.prepare.outputs.build == 'true'
-
-    steps:
-      - name: Checkout this repo
-        uses: actions/checkout@v4
-
-      - name: Clone Bruno
-        run: git clone --depth 1 --branch ${{ needs.prepare.outputs.tag }} https://github.com/usebruno/bruno.git
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: bruno/.nvmrc
-          cache: 'npm'
-          cache-dependency-path: bruno/package-lock.json
-
-      - name: Install deps
-        run: |
-          cd bruno
-          npm install --legacy-peer-deps
-          brew install python-setuptools
-
-      - name: Build packages
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd bruno
-          npm run build:bruno-common
-          npm run build:bruno-converters
-          npm run build:bruno-requests
-          npm run build:bruno-query
-          npm run build:graphql-docs
-          npm run build:schema-types
-          npm run build:bruno-filestore
-          npm run sandbox:bundle-libraries --workspace=packages/bruno-js
-
-      - name: Build web
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd bruno
-          npm run build:web
-
-      - name: Set Bruno version in package.json
-        shell: bash
-        run: |
-          VERSION="${{ needs.prepare.outputs.tag }}"
-          VERSION_SHORT="${VERSION#v}"
-          cd bruno/packages/bruno-electron
-          npm version "$VERSION_SHORT" --no-git-tag-version --allow-same-version
-
-      - name: Build macOS app
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd bruno
-          npm run build:electron
-
-      - name: Upload macOS artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-macos
-          path: |
-            bruno/packages/bruno-electron/out/bruno_*
-            !bruno/packages/bruno-electron/out/*.blockmap
-          if-no-files-found: error
-
-  linux:
-    runs-on: ubuntu-latest
-    needs: prepare
-    if: needs.prepare.outputs.build == 'true'
-    env:
-      DEBIAN_FRONTEND: noninteractive
-      USE_SYSTEM_MKSQUASHFS: 1
-
-    steps:
-      - name: Checkout this repo
-        uses: actions/checkout@v4
-
-      - name: Clone Bruno
-        run: git clone --depth 1 --branch ${{ needs.prepare.outputs.tag }} https://github.com/usebruno/bruno.git
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: bruno/.nvmrc
-          cache: 'npm'
-          cache-dependency-path: bruno/package-lock.json
-
-      - name: Install system deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y squashfs-tools
-
-      - name: Install deps
-        run: |
-          cd bruno
-          npm install --legacy-peer-deps
-
-      - name: Build packages
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd bruno
-          npm run build:bruno-common
-          npm run build:bruno-converters
-          npm run build:bruno-requests
-          npm run build:bruno-query
-          npm run build:graphql-docs
-          npm run build:schema-types
-          npm run build:bruno-filestore
-          npm run sandbox:bundle-libraries --workspace=packages/bruno-js
-
-      - name: Build web
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd bruno
-          npm run build:web
-
-      - name: Set Bruno version in package.json
-        shell: bash
-        run: |
-          VERSION="${{ needs.prepare.outputs.tag }}"
-          VERSION_SHORT="${VERSION#v}"
-          cd bruno/packages/bruno-electron
-          npm version "$VERSION_SHORT" --no-git-tag-version --allow-same-version
-
-      - name: Build Linux app
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd bruno
-          npm run build:electron
-
-      - name: Upload Linux artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-linux
-          path: |
-            bruno/packages/bruno-electron/out/bruno_*
-            !bruno/packages/bruno-electron/out/*.blockmap
-          if-no-files-found: error
-
-  publish:
-    runs-on: ubuntu-latest
-    needs: [prepare, windows, macos, linux]
-    if: needs.prepare.outputs.build == 'true'
-
-    steps:
-      - name: Checkout this repo
-        uses: actions/checkout@v4
-
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-
       - name: Create Release
+        if: steps.decision.outputs.build == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ needs.prepare.outputs.tag }}
-          name: Bruno ${{ needs.prepare.outputs.tag }} - Multi Platform Build
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Bruno ${{ steps.version.outputs.tag }} - Windows Build
           body: |
-            🚀 Build automatica di Bruno ${{ needs.prepare.outputs.tag }}
-
-            **Piattaforme incluse:**
-            - Windows
-            - macOS
-            - Linux
+            🚀 Build automatica di Bruno ${{ steps.version.outputs.tag }} per Windows
+            
+            **Installer disponibili:**
+            - `bruno_${{ steps.version.outputs.tag }}_x64_win.exe` - Installer per Windows x64
+            - `bruno_${{ steps.version.outputs.tag }}_arm64_win.exe` - Installer per Windows ARM64
+            - `bruno_${{ steps.version.outputs.tag }}_win.exe` - Installer multi-architettura (x64 + ARM64)
+            
+            **Unpacked (portable):**
+            - `bruno_${{ steps.version.outputs.tag }}_x64-unpacked.zip` - Versione portable x64
+            - `bruno_${{ steps.version.outputs.tag }}_arm64-unpacked.zip` - Versione portable ARM64
           files: |
-            build-windows/*
-            build-macos/*
-            build-linux/*
+            bruno/packages/bruno-electron/out/*.exe
+            bruno/packages/bruno-electron/out/*.zip
           draft: false
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Save built version
+        if: steps.decision.outputs.build == 'true'
         shell: bash
         run: |
-          echo "${{ needs.prepare.outputs.tag }}" > last_version.txt
+          echo "${{ steps.version.outputs.tag }}" > last_version.txt
 
       - name: Commit version file
+        if: steps.decision.outputs.build == 'true'
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add last_version.txt
-          git diff --cached --quiet || git commit -m "Update built Bruno version"
-          git diff --cached --quiet || git push
+          git commit -m "Update built Bruno version"
+          git push
