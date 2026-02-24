@@ -98,6 +98,7 @@ jobs:
           npm run build:graphql-docs
           npm run build:schema-types
           npm run build:bruno-filestore
+          npm run sandbox:bundle-libraries --workspace=packages/bruno-js
 
       - name: Build web
         if: steps.decision.outputs.build == 'true'
@@ -119,12 +120,40 @@ jobs:
           cd bruno
           npm run build:electron
 
-      - name: Upload artifact
+      - name: Package unpacked versions
         if: steps.decision.outputs.build == 'true'
-        uses: actions/upload-artifact@v4
+        shell: bash
+        run: |
+          cd bruno/packages/bruno-electron/out
+          7z a -tzip bruno-x64-unpacked.zip ./win-unpacked/*
+          7z a -tzip bruno-arm64-unpacked.zip ./win-arm64-unpacked/*
+
+      - name: Create Release
+        if: steps.decision.outputs.build == 'true'
+        uses: softprops/action-gh-release@v2
         with:
-          name: bruno-windows
-          path: bruno/packages/bruno-electron/out/**
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Bruno ${{ steps.version.outputs.tag }} - Windows Build
+          body: |
+            🚀 Build automatica di Bruno ${{ steps.version.outputs.tag }} per Windows
+            
+            **Installer disponibili:**
+            - `bruno_*_x64_win.exe` - Installer per Windows x64
+            - `bruno_*_arm64_win.exe` - Installer per Windows ARM64
+            - `bruno_*_win.exe` - Installer multi-architettura (x64 + ARM64)
+            
+            **Unpacked (portable):**
+            - `bruno-x64-unpacked.zip` - Versione portable x64
+            - `bruno-arm64-unpacked.zip` - Versione portable ARM64
+          files: |
+            bruno/packages/bruno-electron/out/bruno_*_x64_win.exe
+            bruno/packages/bruno-electron/out/bruno_*_arm64_win.exe
+            bruno/packages/bruno-electron/out/bruno_*_win.exe
+            bruno/packages/bruno-electron/out/bruno-x64-unpacked.zip
+            bruno/packages/bruno-electron/out/bruno-arm64-unpacked.zip
+          draft: false
+          prerelease: false
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Save built version
         if: steps.decision.outputs.build == 'true'
