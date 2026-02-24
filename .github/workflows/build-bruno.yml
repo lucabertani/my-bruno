@@ -146,11 +146,8 @@ jobs:
             - `bruno-x64-unpacked.zip` - Versione portable x64
             - `bruno-arm64-unpacked.zip` - Versione portable ARM64
           files: |
-            bruno/packages/bruno-electron/out/bruno_*_x64_win.exe
-            bruno/packages/bruno-electron/out/bruno_*_arm64_win.exe
-            bruno/packages/bruno-electron/out/bruno_*_win.exe
-            bruno/packages/bruno-electron/out/bruno-x64-unpacked.zip
-            bruno/packages/bruno-electron/out/bruno-arm64-unpacked.zip
+            bruno/packages/bruno-electron/out/*.exe
+            bruno/packages/bruno-electron/out/*.zip
           draft: false
           prerelease: false
           token: ${{ secrets.GITHUB_TOKEN }}
