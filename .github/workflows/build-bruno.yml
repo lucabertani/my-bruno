@@ -12,7 +12,7 @@ on:
         required: false
 
   schedule:
-    - cron: "0 */6 * * *"   # ogni 6 ore
+    - cron: "0 8 * * 1"   # ogni lunedì alle 08:00 (UTC)
 
 permissions:
   contents: write
